@@ -60,40 +60,56 @@ The application will be available at `http://localhost:3000`
 ### Backend
 - ✅ Spring Boot 3 with Java 17
 - ✅ RESTful API with clean architecture
-- ✅ JWT-based authentication
+- ✅ JWT-based authentication with role-based access control
+- ✅ BCrypt password encoding
 - ✅ MySQL/PostgreSQL support
 - ✅ Swagger/OpenAPI documentation
 - ✅ Global exception handling
 - ✅ MapStruct for DTO mapping
 - ✅ Spring Data JPA with Hibernate
+- ✅ Transaction-safe order creation with stock management
+- ✅ Role-based security with method-level authorization
 
 ### Frontend
 - ✅ Next.js 14 with App Router
 - ✅ TypeScript
 - ✅ Tailwind CSS for styling
 - ✅ JWT authentication
-- ✅ Protected routes
-- ✅ Admin dashboard
-- ✅ Product management
-- ✅ Category management
-- ✅ Order management
-- ✅ User management
+- ✅ Protected routes with role-based navigation
+- ✅ Admin dashboard with real-time statistics
+- ✅ Product management (Full CRUD)
+- ✅ Category management (Full CRUD)
+- ✅ Order management (Full CRUD with stock validation)
+- ✅ User management (Full CRUD with status control)
+- ✅ Supplier management (Full CRUD)
+- ✅ Low stock alerts
+- ✅ Order status tracking
+- ✅ Responsive design
 
 ## 📦 Domain Entities
 
-- **User**: System users with roles (ADMIN, MANAGER, USER)
-- **Product**: Inventory items with pricing and stock
+- **User**: System users with roles (ADMIN, STAFF) and active/inactive status
+- **Product**: Inventory items with pricing, stock, and low stock threshold
 - **Category**: Product categorization
-- **Order**: Customer orders
-- **OrderItem**: Items within an order
+- **Supplier**: Supplier information with contact details
+- **Order**: Customer orders with status tracking (PENDING, PAID, SHIPPED, COMPLETED, CANCELLED)
+- **OrderItem**: Items within an order with quantity and pricing
 - **Payment**: Payment information for orders
 
-## 🔐 Authentication
+## 🔐 Authentication & Authorization
 
-The system uses JWT tokens for authentication. Login via:
-- Endpoint: `POST /api/auth/login`
-- Request body: `{ "username": "admin", "password": "password" }`
-- Response includes JWT token to use in Authorization header: `Bearer <token>`
+The system uses JWT tokens for authentication with role-based access control:
+
+- **Login Endpoint**: `POST /api/auth/login`
+- **Request body**: `{ "username": "admin", "password": "password" }`
+- **Response**: Includes JWT token to use in Authorization header: `Bearer <token>`
+
+### Role-Based Access Control
+
+- **ADMIN**: Full access to all features (users, products, categories, suppliers, orders)
+- **STAFF**: Limited access (view products, create/update orders)
+
+All endpoints are protected by JWT authentication, with method-level security enforcing role-based permissions.
 
 ## 📚 API Documentation
 
@@ -122,30 +138,41 @@ Once the backend is running, access Swagger UI at:
 - Axios
 - Zustand (state management)
 
-## 📝 TODO
+## 🎯 Key Features Implemented
 
-### Backend
-- [ ] Implement password encoding with BCrypt
-- [ ] Complete order item creation logic
-- [ ] Add payment service implementation
-- [ ] Add refresh token mechanism
-- [ ] Add user registration endpoint
-- [ ] Add pagination to list endpoints
-- [ ] Add filtering and sorting capabilities
-- [ ] Add comprehensive unit and integration tests
-- [ ] Add logging framework
-- [ ] Add business rule validations
+### Dashboard
+- Real-time statistics (products, orders, users, revenue)
+- Today's metrics tracking
+- Recent orders list
+- Order status breakdown with visual progress bars
+- Low stock alerts with color-coded indicators
+- Role-based statistics display
 
-### Frontend
-- [ ] Add product creation/edit forms
-- [ ] Add category creation/edit forms
-- [ ] Add order creation form
-- [ ] Add user creation/edit forms
-- [ ] Add loading states and error handling
-- [ ] Add pagination to tables
-- [ ] Add search and filter functionality
-- [ ] Add dashboard statistics with real data
-- [ ] Add data visualization charts
+### Product Management
+- Full CRUD operations
+- Stock tracking with low stock threshold
+- Supplier relationship
+- Category assignment
+- Role-based permissions (Admin: full access, Staff: view only)
+
+### Order Management
+- Complete order lifecycle (PENDING → PAID → SHIPPED → COMPLETED)
+- Stock validation before order creation
+- Automatic stock reduction on order creation
+- Transaction-safe operations
+- Order cancellation support
+
+### User Management
+- Full CRUD operations (Admin only)
+- Role assignment (ADMIN/STAFF)
+- Active/Inactive status control
+- Password management with BCrypt encoding
+- Self-protection (cannot delete/disable own account)
+
+### Supplier Management
+- Full CRUD operations (Admin only)
+- Contact information management
+- Active/Inactive status tracking
 
 ## 📄 License
 
