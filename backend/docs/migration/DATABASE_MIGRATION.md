@@ -24,13 +24,13 @@ mysqldump -u root -p smart_inventory_db > backup_before_migration.sql
 
 **Option A: Using MySQL Command Line**
 ```bash
-mysql -u root -p smart_inventory_db < backend/src/main/resources/migration-update-roles.sql
+mysql -u root -p smart_inventory_db < scripts/sql/migrations/migration-update-roles.sql
 ```
 
 **Option B: Using MySQL Workbench**
 1. Open MySQL Workbench
 2. Connect to your database
-3. Open `backend/src/main/resources/migration-update-roles.sql`
+3. Open `scripts/sql/migrations/migration-update-roles.sql`
 4. Execute the script
 
 **Option C: Copy and Paste**
@@ -119,7 +119,7 @@ DESCRIBE products;
 If you need to revert the changes:
 
 ```bash
-mysql -u root -p smart_inventory_db < backend/src/main/resources/migration-rollback.sql
+mysql -u root -p smart_inventory_db < scripts/sql/migrations/migration-rollback.sql
 ```
 
 **Note:** Rollback will:

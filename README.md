@@ -155,6 +155,19 @@ This project is created for academic purposes.
 
 This is a template project structure. Feel free to extend and customize according to your needs.
 
+## 📚 Documentation
+
+Project documentation is organized in the following structure:
+
+- **Project Documentation**: `docs/` - Project-wide documentation
+- **Backend Documentation**: `backend/docs/` - Setup, migrations, troubleshooting
+- **Frontend Documentation**: `frontend/docs/` - Implementation guides and features
+- **SQL Scripts**: `backend/scripts/sql/` - Database scripts organized by purpose
+
+See individual README files in each directory for detailed navigation.
+
 ## 📞 Support
 
-For issues and questions, please refer to the individual README files in the `backend/` and `frontend/` directories.
+For issues and questions, please refer to:
+- Individual README files in `backend/` and `frontend/` directories
+- Documentation in `docs/`, `backend/docs/`, and `frontend/docs/`
