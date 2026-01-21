@@ -10,9 +10,10 @@ import org.mapstruct.factory.Mappers;
 public interface UserMapper {
     UserMapper INSTANCE = Mappers.getMapper(UserMapper.class);
 
+    @Mapping(target = "password", ignore = true) // Never expose password in DTO responses
     UserDTO toDTO(User user);
 
-    @Mapping(target = "password", ignore = true)
+    @Mapping(target = "password", ignore = true) // Password is handled separately in service
     @Mapping(target = "orders", ignore = true)
     User toEntity(UserDTO userDTO);
 }

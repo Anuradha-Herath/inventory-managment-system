@@ -15,6 +15,8 @@ public interface ProductMapper {
     ProductDTO toDTO(Product product);
 
     @Mapping(target = "category", ignore = true)
+    @Mapping(target = "supplier", ignore = true)
+    @Mapping(target = "lowStockThreshold", ignore = true)
     @Mapping(target = "orderItems", ignore = true)
     Product toEntity(ProductDTO productDTO);
 }

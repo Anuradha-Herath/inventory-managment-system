@@ -28,6 +28,8 @@ function ProductsPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const isAdmin = user?.role === 'ADMIN';
 
   useEffect(() => {
@@ -70,23 +72,100 @@ function ProductsPage() {
     setError('');
     setSubmitting(true);
 
+    // Validate inputs
+    if (!formData.name.trim()) {
+      setError('Product name is required');
+      setSubmitting(false);
+      return;
+    }
+
+    const price = parseFloat(formData.price);
+    const quantity = parseInt(formData.quantity);
+    const categoryId = parseInt(formData.categoryId);
+    
+    if (isNaN(price) || price < 0) {
+      setError('Price must be a valid positive number');
+      setSubmitting(false);
+      return;
+    }
+    
+    if (isNaN(quantity) || quantity < 0) {
+      setError('Quantity must be a valid positive number');
+      setSubmitting(false);
+      return;
+    }
+
+    if (isNaN(categoryId) || categoryId <= 0) {
+      setError('Please select a valid category');
+      setSubmitting(false);
+      return;
+    }
+
     try {
-      await productsApi.create({
-        name: formData.name,
-        description: formData.description || undefined,
-        price: parseFloat(formData.price),
-        quantity: parseInt(formData.quantity),
-        sku: formData.sku || undefined,
-        categoryId: parseInt(formData.categoryId),
-        imageUrl: formData.imageUrl || undefined,
-      });
+      if (editingProduct) {
+        await productsApi.update(editingProduct.id, {
+          name: formData.name.trim(),
+          description: formData.description.trim() || undefined,
+          price,
+          quantity,
+          sku: formData.sku.trim() || undefined,
+          categoryId,
+          imageUrl: formData.imageUrl.trim() || undefined,
+        });
+      } else {
+        await productsApi.create({
+          name: formData.name.trim(),
+          description: formData.description.trim() || undefined,
+          price,
+          quantity,
+          sku: formData.sku.trim() || undefined,
+          categoryId,
+          imageUrl: formData.imageUrl.trim() || undefined,
+        });
+      }
       setShowModal(false);
+      setEditingProduct(null);
       resetForm();
       loadProducts();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create product');
+      setError(err.response?.data?.message || `Failed to ${editingProduct ? 'update' : 'create'} product`);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product);
+    setFormData({
+      name: product.name,
+      description: product.description || '',
+      price: product.price.toString(),
+      quantity: product.quantity.toString(),
+      sku: product.sku || '',
+      categoryId: product.categoryId.toString(),
+      imageUrl: product.imageUrl || '',
+    });
+    setShowModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deletingProduct) return;
+    
+    try {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/8fb103c1-e5ee-40a7-ae59-48a560fae6ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'products/page.tsx:122',message:'Attempting product delete',data:{productId:deletingProduct.id,productName:deletingProduct.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
+      await productsApi.delete(deletingProduct.id);
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/8fb103c1-e5ee-40a7-ae59-48a560fae6ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'products/page.tsx:125',message:'Product delete succeeded',data:{productId:deletingProduct.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
+      setDeletingProduct(null);
+      loadProducts();
+    } catch (err: any) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/8fb103c1-e5ee-40a7-ae59-48a560fae6ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'products/page.tsx:130',message:'Product delete failed',data:{error:err.response?.data?.message||err.message,statusCode:err.response?.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
+      alert(err.response?.data?.message || 'Failed to delete product');
     }
   };
 
@@ -101,6 +180,8 @@ function ProductsPage() {
       imageUrl: '',
     });
     setError('');
+    setEditingProduct(null);
+    setSubmitting(false);
   };
 
   if (loading) {
@@ -134,8 +215,9 @@ function ProductsPage() {
             onClose={() => {
               setShowModal(false);
               resetForm();
+              setError('');
             }}
-            title="Add New Product"
+            title={editingProduct ? 'Edit Product' : 'Add New Product'}
           >
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
@@ -177,6 +259,7 @@ function ProductsPage() {
                   <input
                     type="number"
                     step="0.01"
+                    min="0"
                     required
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
@@ -190,6 +273,7 @@ function ProductsPage() {
                   </label>
                   <input
                     type="number"
+                    min="0"
                     required
                     value={formData.quantity}
                     onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
@@ -257,7 +341,7 @@ function ProductsPage() {
                   disabled={submitting}
                   className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
                 >
-                  {submitting ? 'Creating...' : 'Create Product'}
+                  {submitting ? (editingProduct ? 'Updating...' : 'Creating...') : (editingProduct ? 'Update Product' : 'Create Product')}
                 </button>
               </div>
             </form>
@@ -301,18 +385,24 @@ function ProductsPage() {
                         {product.sku}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${product.price.toFixed(2)}
+                        ${(product.price || 0).toFixed(2)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {product.quantity}
+                        {product.quantity ?? 0}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         {isAdmin ? (
                           <>
-                            <button className="text-primary-600 hover:text-primary-900 mr-4">
+                            <button
+                              onClick={() => handleEdit(product)}
+                              className="text-primary-600 hover:text-primary-900 mr-4"
+                            >
                               Edit
                             </button>
-                            <button className="text-red-600 hover:text-red-900">
+                            <button
+                              onClick={() => setDeletingProduct(product)}
+                              className="text-red-600 hover:text-red-900"
+                            >
                               Delete
                             </button>
                           </>
@@ -326,6 +416,36 @@ function ProductsPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Delete Confirmation Modal */}
+          {deletingProduct && (
+            <Modal
+              isOpen={!!deletingProduct}
+              onClose={() => setDeletingProduct(null)}
+              title="Delete Product"
+            >
+              <div className="space-y-4">
+                <p className="text-gray-700">
+                  Are you sure you want to delete <strong>{deletingProduct.name}</strong>? This action cannot be undone.
+                </p>
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setDeletingProduct(null)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </Modal>
+          )}
         </div>
       </DashboardLayout>
     </ProtectedRoute>

@@ -14,6 +14,8 @@ function CategoriesPage() {
   const [formData, setFormData] = useState({ name: '', description: '' });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
 
   useEffect(() => {
     loadCategories();
@@ -35,15 +37,62 @@ function CategoriesPage() {
     setError('');
     setSubmitting(true);
 
+    // Validate inputs
+    if (!formData.name.trim()) {
+      setError('Category name is required');
+      setSubmitting(false);
+      return;
+    }
+
     try {
-      await categoriesApi.create(formData);
+      const categoryData = {
+        name: formData.name.trim(),
+        description: formData.description.trim() || undefined,
+      };
+
+      if (editingCategory) {
+        await categoriesApi.update(editingCategory.id, categoryData);
+      } else {
+        await categoriesApi.create(categoryData);
+      }
       setShowModal(false);
+      setEditingCategory(null);
       setFormData({ name: '', description: '' });
       loadCategories();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create category');
+      setError(err.response?.data?.message || `Failed to ${editingCategory ? 'update' : 'create'} category`);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleEdit = (category: Category) => {
+    setEditingCategory(category);
+    setFormData({
+      name: category.name,
+      description: category.description || '',
+    });
+    setShowModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deletingCategory) return;
+    
+    try {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/8fb103c1-e5ee-40a7-ae59-48a560fae6ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'categories/page.tsx:66',message:'Attempting category delete',data:{categoryId:deletingCategory.id,categoryName:deletingCategory.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
+      await categoriesApi.delete(deletingCategory.id);
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/8fb103c1-e5ee-40a7-ae59-48a560fae6ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'categories/page.tsx:69',message:'Category delete succeeded',data:{categoryId:deletingCategory.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
+      setDeletingCategory(null);
+      loadCategories();
+    } catch (err: any) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/8fb103c1-e5ee-40a7-ae59-48a560fae6ae',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'categories/page.tsx:74',message:'Category delete failed',data:{error:err.response?.data?.message||err.message,statusCode:err.response?.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+      // #endregion
+      alert(err.response?.data?.message || 'Failed to delete category');
     }
   };
 
@@ -75,10 +124,11 @@ function CategoriesPage() {
             isOpen={showModal}
             onClose={() => {
               setShowModal(false);
+              setEditingCategory(null);
               setFormData({ name: '', description: '' });
               setError('');
             }}
-            title="Add New Category"
+            title={editingCategory ? 'Edit Category' : 'Add New Category'}
           >
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
@@ -129,7 +179,7 @@ function CategoriesPage() {
                   disabled={submitting}
                   className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
                 >
-                  {submitting ? 'Creating...' : 'Create Category'}
+                  {submitting ? (editingCategory ? 'Updating...' : 'Creating...') : (editingCategory ? 'Update Category' : 'Create Category')}
                 </button>
               </div>
             </form>
@@ -167,10 +217,16 @@ function CategoriesPage() {
                         {category.description || 'No description'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button className="text-primary-600 hover:text-primary-900 mr-4">
+                        <button
+                          onClick={() => handleEdit(category)}
+                          className="text-primary-600 hover:text-primary-900 mr-4"
+                        >
                           Edit
                         </button>
-                        <button className="text-red-600 hover:text-red-900">
+                        <button
+                          onClick={() => setDeletingCategory(category)}
+                          className="text-red-600 hover:text-red-900"
+                        >
                           Delete
                         </button>
                       </td>
@@ -180,6 +236,36 @@ function CategoriesPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Delete Confirmation Modal */}
+          {deletingCategory && (
+            <Modal
+              isOpen={!!deletingCategory}
+              onClose={() => setDeletingCategory(null)}
+              title="Delete Category"
+            >
+              <div className="space-y-4">
+                <p className="text-gray-700">
+                  Are you sure you want to delete <strong>{deletingCategory.name}</strong>? This action cannot be undone.
+                </p>
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setDeletingCategory(null)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </Modal>
+          )}
         </div>
       </DashboardLayout>
     </ProtectedRoute>

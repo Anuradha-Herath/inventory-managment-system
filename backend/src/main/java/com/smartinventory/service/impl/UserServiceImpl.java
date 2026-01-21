@@ -7,6 +7,7 @@ import com.smartinventory.mapper.UserMapper;
 import com.smartinventory.repository.UserRepository;
 import com.smartinventory.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,11 +21,18 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public UserDTO createUser(UserDTO userDTO) {
-        // TODO: Add password encoding
+        // Validate password is provided for new users
+        if (userDTO.getPassword() == null || userDTO.getPassword().trim().isEmpty()) {
+            throw new IllegalArgumentException("Password is required for new users");
+        }
+        
         User user = userMapper.toEntity(userDTO);
+        // Encode password before saving
+        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
         User savedUser = userRepository.save(user);
         return userMapper.toDTO(savedUser);
     }
@@ -34,11 +42,27 @@ public class UserServiceImpl implements UserService {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         
-        // TODO: Update fields properly
-        existingUser.setFirstName(userDTO.getFirstName());
-        existingUser.setLastName(userDTO.getLastName());
-        existingUser.setEmail(userDTO.getEmail());
-        existingUser.setActive(userDTO.getActive());
+        // Update fields
+        if (userDTO.getFirstName() != null) {
+            existingUser.setFirstName(userDTO.getFirstName());
+        }
+        if (userDTO.getLastName() != null) {
+            existingUser.setLastName(userDTO.getLastName());
+        }
+        if (userDTO.getEmail() != null) {
+            existingUser.setEmail(userDTO.getEmail());
+        }
+        if (userDTO.getActive() != null) {
+            existingUser.setActive(userDTO.getActive());
+        }
+        if (userDTO.getRole() != null) {
+            existingUser.setRole(userDTO.getRole());
+        }
+        
+        // Update password only if provided
+        if (userDTO.getPassword() != null && !userDTO.getPassword().trim().isEmpty()) {
+            existingUser.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+        }
         
         User updatedUser = userRepository.save(existingUser);
         return userMapper.toDTO(updatedUser);

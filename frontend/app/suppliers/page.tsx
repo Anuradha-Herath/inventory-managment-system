@@ -44,8 +44,28 @@ function SuppliersPage() {
     setError('');
     setSubmitting(true);
 
+    // Validate inputs
+    if (!formData.name.trim()) {
+      setError('Supplier name is required');
+      setSubmitting(false);
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      setError('Email is required');
+      setSubmitting(false);
+      return;
+    }
+
     try {
-      await suppliersApi.create(formData);
+      await suppliersApi.create({
+        name: formData.name.trim(),
+        contactPerson: formData.contactPerson.trim() || undefined,
+        email: formData.email.trim(),
+        phoneNumber: formData.phoneNumber.trim() || undefined,
+        address: formData.address.trim() || undefined,
+        active: formData.active,
+      });
       setShowModal(false);
       setFormData({
         name: '',

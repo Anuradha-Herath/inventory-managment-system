@@ -33,11 +33,12 @@ export const useAuthStore = create<AuthState>()(
         set({
           token: response.token,
           user,
-          isAuthenticated: true,
+          isAuthenticated: !!response.token && !!user,
         });
       },
       logout: () => {
         localStorage.removeItem('token');
+        localStorage.removeItem('auth-storage');
         set({
           token: null,
           user: null,
@@ -45,7 +46,11 @@ export const useAuthStore = create<AuthState>()(
         });
       },
       setUser: (user: User) => {
-        set({ user });
+        const currentToken = useAuthStore.getState().token;
+        set({ 
+          user,
+          isAuthenticated: !!currentToken && !!user,
+        });
       },
     }),
     {
